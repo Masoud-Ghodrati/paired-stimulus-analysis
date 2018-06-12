@@ -65,9 +65,9 @@ if strcmpi(stim.textureType, 'texture')
     stim_LeadStim  = stim.TextFamilies(1:length(stim.TextFamilies)/2);  % leading stimulus names/indexes
     stim_TrailStim = stim.TextFamilies(1+(length(stim.TextFamilies)/2):end);  % trailing stimulus names/indexes
 else
-    stim_LeadStim  = 1:length(stim.oriList)/2;  % leading stimulus names/indexes
+    stim_LeadStim  = 1:length(stim.oriList);  % leading stimulus names/indexes
     stim_TrailStim = (1+(length(stim.oriList)/2)):length(stim.oriList);  % trailing stimulus names/indexes
-%     stim_LeadStim = stim_TrailStim;
+    %     stim_LeadStim = stim_TrailStim;
 end
 stim_Train     = stim.allStimTrain;  % stimulus train. This should be a matrix of 3*n. 1st row: leading stim name/ind, 2nd trailing stim name/ind, last sample number
 stim_Images    = stim.allStimFile;  % presented image file
@@ -181,12 +181,12 @@ for iElectrode = 1 : length(select_Electrodes)
     sdf = conv(ones(1, SDF_binSize), sTrain(iElectrode,:))*(1/(SDF_binSize/1000));
     
     iPanel = 1;
-    for iLeadStim = 1 : length(stim_LeadStim)
-        for iTrailStim = 1 : length(stim_TrailStim)
+    for iLeadStim = 1 : length(unique(stim_Train(1, :)))
+        for iTrailStim = 1 : length(unique(stim_Train(2, :)))
             
-            subplot(6, 6, iPanel)
+            subplot(12, 6, iPanel)
             this_Pair = find(stim_Train(1, :) == stim_LeadStim(iLeadStim) &  stim_Train(2, :) == stim_TrailStim(iTrailStim));
-             
+            
             switch select_Alignments
                 case 1
                     % PSTH aligned to the start of first event
@@ -273,10 +273,11 @@ line_Color2 = colormap('parula');
 line_width  = 1;
 
 iPanel = 1;
-for iLeadStim = 1 : length(stim_LeadStim)
-    for iTrailStim = 1 : length(stim_TrailStim)
+for iLeadStim = 1 : length(unique(stim_Train(1, :)))
+    for iTrailStim = 1 : length(unique(stim_Train(2, :)))
         
-        subplot(6, 6, iPanel)
+        
+        subplot(12, 6, iPanel)
         this_Pair = find(stim_Train(1, :) == stim_LeadStim(iLeadStim) &  stim_Train(2, :) == stim_TrailStim(iTrailStim));
         
         % get some timing event for different alignments

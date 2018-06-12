@@ -74,7 +74,7 @@ stim_Images    = stim.allStimFile;  % presented image file
 %% make a spike train for each selected channel
 close all
 SDF_binSize       = 10;  % ms
-time_Window       = 1000*[2500 2620];  % time window ro plot spikes (sec)
+time_Window       = 1000*[1 3000];  % time window ro plot spikes (sec)
 line_Color        = [1 0 0; 0 1 0; 0 0 1; 0 0 0]; % line colors for tag
 % Raster plot properties
 YAXIS_LIM          = [0, 192];
@@ -102,7 +102,7 @@ for iElectrode = 1 : length(select_Electrodes)
     sdf = sdf + conv(ones(1, SDF_binSize), sTrain)*(1/(SDF_binSize/1000));
     
     this_Raster = repmat(this_Electrode_Spikes, [2 1]);
-    line(this_Raster, RASTER_LINE + raster_Increment, 'Color', RASTER_COLOR, 'LineWidth', RASTER_LINE_WIDTH); hold on
+%     line(this_Raster, RASTER_LINE + raster_Increment, 'Color', RASTER_COLOR, 'LineWidth', RASTER_LINE_WIDTH); hold on
     
     raster_Increment = raster_Increment + RASTER_AXIS_INCRIM;
     

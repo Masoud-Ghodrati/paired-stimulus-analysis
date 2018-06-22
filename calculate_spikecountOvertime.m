@@ -4,10 +4,10 @@ clc
 
 % load the NEV file and do some pre-processing.
 data_Path = 'F:\CJ194\Data\';
-data_FileName = 'CJ194_datafile026.nev';
+data_FileName = 'CJ194_datafile025.nev';
 
 stimulus_Path = 'F:\CJ194\Stimulus\';
-stimulus_FileName = 'Paired_Stimulus_File_CJ194_0002.mat';
+stimulus_FileName = 'Paired_Stimulus_File_CJ194_0001.mat';
 
 load([stimulus_Path stimulus_FileName])
 
@@ -98,9 +98,10 @@ other_Alignments = [0 winSize;
 
 group_Trials = 100;  % group every "group_Trails" trials to see the effect of learning
 line_Color   = [1 0 0; 0 1 0; 0 0 1; 0 0 0];
+baseline_Window = round(1000*[stim.durationITI(1)-0.1 stim.durationITI(1)]);
 FigureTab   = true;  % if ture it plots a figure with mutiple tabs, otheriwse, multiple figure
 
-%% find the time window of analysis for evey cell
+%% find the time window of analysis
 
 if FigureTab
     %     figure('units','normalized','outerposition',[0 0 1 1]);
@@ -116,9 +117,7 @@ for iElectrode = 1 : length(select_Electrodes)
         figure('units','normalized','outerposition',[0 0 1 1]);
     end
     sdf = conv(ones(1, SDF_binSize), sTrain(iElectrode,:))*(1/(SDF_binSize/1000));
-    
     all_Resp = [];
-    
     for iTrailStim = 1 : length(stim_TrailStim)
         
         for iLeadStim = 1 : length(stim_LeadStim)
@@ -156,117 +155,83 @@ for iElectrode = 1 : length(select_Electrodes)
     end
     
     plot(mean(all_Resp)), hold on
-    mean_Resp = mean(all_Resp);
-    [max_ValStim1, ind_Stim1] = max(mean_Resp(1:110));
-    [max_ValStim2, ind_Stim2] = max(mean_Resp(150:end));
-    
-    plot(ind_Stim2 + 150-1, max_ValStim2, 'ro')
-    plot(ind_Stim1       , max_ValStim1, 'ro')
+    mx = mean(all_Resp);
+    [mymx1, mymxind1] = max(mx(1:100));
+    [mymx2, mymxind2] = max(mx(150:end));
+    plot(mymxind1, mymx1, 'ro')
+    h = plot(mymxind2+150,     mymx2, 'ro');
+    h.Parent.Box = 'off';
+    h.Parent.TickDir = 'out';
+    h.Parent.XLabel.String = 'Time (ms)';
+    h.Parent.YLabel.String = 'Firing Rate (spk/s)';
     if FigureTab
         thistab.Title = ['Chn ' num2str(iElectrode)];
     else
         suptitle = ['Chn ' num2str(iElectrode)];
     end
     
-    cell_Ind_Max(:, iElectrode) = [ind_Stim1 ind_Stim2 + 150 -1];
+    cell_Ind_Max(:, iElectrode) = [mymxind1; mymxind2+150];
 end
 
 
 %%
-figure
-line_Color2 = colormap('parula');
-line_width  = 1;
-predicted_Resp    = cell(1, 6);
-nonpredicted_resp = cell(1, 6);
-if FigureTab
-    %     figure('units','normalized','outerposition',[0 0 1 1]);
-    tab_group = uitabgroup; % tabgroup
-end
+
 for iElectrode = 1 : length(select_Electrodes)
     
-    if FigureTab
-        thistab = uitab(tab_group);  % build a tab
-        axes('Parent', thistab); % somewhere to plot
-    else
-        figure('units','normalized','outerposition',[0 0 1 1]);
-    end
-    sdf = conv(ones(1, SDF_binSize), sTrain(iElectrode,:))*(1/(SDF_binSize/1000));
+    sdf = sTrain(iElectrode,:);
     
     for iTrailStim = 1 : length(stim_TrailStim)
-        temp_Resp = [];
-        subplot(1, 6, iTrailStim)
         
         for iLeadStim = 1 : length(stim_LeadStim)
             
-            this_Pair = find(stim_Train(1, :) == stim_LeadStim(iLeadStim) &  stim_Train(2, :) == stim_TrailStim(iTrailStim));
-            
-            switch select_Alignments
-                case 1
-                    % PSTH aligned to the start of first event
-                    this_Stim_OnTime1  = round(stim_OnTime1(this_Pair));
-                    this_Epochs = repmat(1:winSize, [length(this_Pair) 1]) + [this_Stim_OnTime1  + other_Alignments(1, 1)-1]';
-                    resps = sdf(this_Epochs);
-                case 2
-                    % PSTH aligned to the end of first event
-                    this_stim_OffTime1 = round(stim_OffTime1(this_Pair));
-                    this_Epochs = repmat(1:winSize, [length(this_Pair) 1]) + [this_stim_OffTime1 + other_Alignments(2, 1)-1]';
-                    resps = sdf(this_Epochs);
-                case 3
-                    % PSTH aligned to the start of ISI
-                    this_stim_OffTime2 = round(stim_OffTime2(this_Pair));
-                    this_Epochs = repmat(1:winSize, [length(this_Pair) 1]) + [this_stim_OffTime2 + other_Alignments(3, 1)-1]';
-                    resps = sdf(this_Epochs);
-                case 4
-                    % PSTH aligned to the start of comments
-                    this_comments      = round(comments(this_Pair));
-                    this_Epochs = repmat(1:winSize, [length(this_Pair) 1]) + [this_comments       + other_Alignments(3, 1)-1]';
-                    resps = sdf(this_Epochs);
-            end
-            
             if iTrailStim == iLeadStim
-                predicted_Resp{1, iTrailStim}(iElectrode, :) =  mean(resps);
-            else
-                temp_Resp = [temp_Resp; resps];
                 
+                this_Pair = find(stim_Train(1, :) == stim_LeadStim(iLeadStim) &  stim_Train(2, :) == stim_TrailStim(iTrailStim));
+                
+                switch select_Alignments
+                    case 1
+                        % PSTH aligned to the start of first event
+                        this_Stim_OnTime1  = round(stim_OnTime1(this_Pair));
+                        this_Epochs = repmat(1:winSize, [length(this_Pair) 1]) + [this_Stim_OnTime1  + other_Alignments(1, 1)-1]';
+                        resps = sdf(this_Epochs);
+                    case 2
+                        % PSTH aligned to the end of first event
+                        this_stim_OffTime1 = round(stim_OffTime1(this_Pair));
+                        this_Epochs = repmat(1:winSize, [length(this_Pair) 1]) + [this_stim_OffTime1 + other_Alignments(2, 1)-1]';
+                        resps = sdf(this_Epochs);
+                    case 3
+                        % PSTH aligned to the start of ISI
+                        this_stim_OffTime2 = round(stim_OffTime2(this_Pair));
+                        this_Epochs = repmat(1:winSize, [length(this_Pair) 1]) + [this_stim_OffTime2 + other_Alignments(3, 1)-1]';
+                        resps = sdf(this_Epochs);
+                    case 4
+                        % PSTH aligned to the start of comments
+                        this_comments      = round(comments(this_Pair));
+                        this_Epochs = repmat(1:winSize, [length(this_Pair) 1]) + [this_comments       + other_Alignments(3, 1)-1]';
+                        resps = sdf(this_Epochs);
+                end
+                
+                peak_1 = sum(resps(:, cell_Ind_Max(1, iElectrode)-30 : cell_Ind_Max(1, iElectrode)+30 ), 2);
+                peak_2 = sum(resps(:, cell_Ind_Max(2, iElectrode)-30 : cell_Ind_Max(2, iElectrode)+30 ), 2);
+                
+                data_Resp{1, iTrailStim}(:,:, iElectrode) =  [peak_1'; peak_2'];
             end
             
         end
-        nonpredicted_resp{1, iTrailStim}(iElectrode, :) = mean(temp_Resp);
         
-        plot(predicted_Resp{1, iTrailStim}(iElectrode, :), 'r'), hold on
-        h = plot(nonpredicted_resp{1, iTrailStim}(iElectrode, :), 'b');
-        
-        h.Parent.Box = 'off';
-        h.Parent.TickDir = 'out';
-        if iTrailStim == 1
-            h.Parent.XLabel.String = 'Time (ms)';
-            h.Parent.YLabel.String = 'Firing Rate (spk/s)';
-        end
-    end
-    
-    legend('Predicted', 'Nonpredicted')
-    legend boxoff
-    if FigureTab
-        thistab.Title = ['Chn ' num2str(iElectrode)];
-    else
-        suptitle = ['Chn ' num2str(iElectrode)];
     end
     
 end
-
-%%
 figure
 for iTrailStim = 1 : length(stim_TrailStim)
-    subplot(1, 6, iTrailStim)
-    plot(mean(predicted_Resp{1, iTrailStim}), 'r'), hold on
-    h = plot(mean(nonpredicted_resp{1, iTrailStim}), 'b');
+    subplot(1,6,iTrailStim)
     
+    h = plot(smooth(mean(squeeze(data_Resp{1, iTrailStim}(1,:, :)),2), 1), 'r'); hold on
+    h = plot(smooth(mean(squeeze(data_Resp{1, iTrailStim}(2,:, :)),2), 1), 'b');
     h.Parent.Box = 'off';
     h.Parent.TickDir = 'out';
     if iTrailStim == 1
-        h.Parent.XLabel.String = 'Time (ms)';
-        h.Parent.YLabel.String = 'Firing Rate (spk/s)';
+        h.Parent.YLabel.String = 'spike count';
+        h.Parent.XLabel.String = 'Trial';
     end
 end
-legend('Predicted', 'Nonpredicted')
-legend boxoff

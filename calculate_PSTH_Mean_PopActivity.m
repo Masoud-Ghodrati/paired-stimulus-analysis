@@ -4,10 +4,10 @@ clc
 
 % load the NEV file and do some pre-processing.
 data_Path = 'F:\CJ194\Data\';
-data_FileName = 'CJ194_datafile026.nev';
+data_FileName = 'CJ194_datafile025.nev';
 
 stimulus_Path = 'F:\CJ194\Stimulus\';
-stimulus_FileName = 'Paired_Stimulus_File_CJ194_0002.mat';
+stimulus_FileName = 'Paired_Stimulus_File_CJ194_0001.mat';
 
 load([stimulus_Path stimulus_FileName])
 
@@ -83,7 +83,7 @@ end
 %% PSHT for a n*n pairing matrix for each selected channel individually
 close all
 
-SDF_binSize       = 5;  % ms
+SDF_binSize       = 25;  % ms
 leadStimDuration  = 1000*stim.durationLeadStim;  % presentation time of leading stimulus
 trailStimDuration = 1000*stim.durationTrailStim;  % presentation time of trailing stimulus
 ISIDurartin       = 1000*stim.durationISI;  % ISI duration
@@ -177,6 +177,7 @@ figure
 line_Color2 = colormap('parula');
 line_width  = 1;
 predicted_Resp    = cell(1, 6);
+predicted_Resp_SingleTrial    = cell(1, 6);
 nonpredicted_resp = cell(1, 6);
 if FigureTab
     %     figure('units','normalized','outerposition',[0 0 1 1]);
@@ -225,6 +226,7 @@ for iElectrode = 1 : length(select_Electrodes)
             
             if iTrailStim == iLeadStim
                 predicted_Resp{1, iTrailStim}(iElectrode, :) =  mean(resps);
+                predicted_Resp_SingleTrial{1, iTrailStim}(:, :, iElectrode) = resps;
             else
                 temp_Resp = [temp_Resp; resps];
                 
@@ -270,3 +272,27 @@ for iTrailStim = 1 : length(stim_TrailStim)
 end
 legend('Predicted', 'Nonpredicted')
 legend boxoff
+
+%% 
+figure
+sub_Ind = 1;
+for iTrial = 1 : group_Trials: size(predicted_Resp_SingleTrial{1}, 1)
+    
+    color_Ind = 1;
+    subplot(1,4,sub_Ind)
+    
+    for iPair = 1 : 6
+        if (iTrial + group_Trials-1)<=length(this_Pair)  
+            this_Mean = mean(mean(predicted_Resp_SingleTrial{iPair}(iTrial : iTrial + group_Trials-1, :, : )), 3);
+            h = plot(1:winSize, this_Mean, 'color', line_Color2(color_Ind, :)); hold on
+        else
+            this_Mean = mean(mean(predicted_Resp_SingleTrial{iPair}(iTrial : end, :, : )), 3);
+            h = plot(1:winSize, this_Mean, 'color', line_Color2(color_Ind, :)); hold on
+        end
+        h.LineWidth = line_width;
+        color_Ind = color_Ind  + 10;
+    end
+    
+    sub_Ind = sub_Ind + 1;
+    
+end

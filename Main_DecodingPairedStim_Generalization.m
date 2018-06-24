@@ -21,16 +21,13 @@ Param.select_Alignments = 1;
 Param.NormalizeRF       = true;  % true will zscore the spike count
 Param.SDF               = true;  % feed the classifer with FR instead of spike count
 Param.SDF_binSize       = 15;    % ms
+Param.TarinTestCellRandomization = false;  % true will randomize test and train cells
 %% read cells and spikes
 rng(1); % For reproducibility
 
 % make some zore array to stor the results
 Group_Cnt                 = 1;
-accyracy_Matrix           = zeros(length(Param.PreStim : Param.TimResolution : Param.PostStim- Param.MovWind) ,length(Param.PreStim : Param.TimResolution : Param.PostStim- Param.MovWind), 400/Param.NumOfTrailGroup);
-raw_SpkieCount            = zeros(length(Param.PreStim : Param.TimResolution : Param.PostStim- Param.MovWind) ,length(Param.PreStim : Param.TimResolution : Param.PostStim- Param.MovWind), 400/Param.NumOfTrailGroup);
-raw_Mean_SpkieCount       = zeros(length(Param.PreStim : Param.TimResolution : Param.PostStim- Param.MovWind) ,length(Param.PreStim : Param.TimResolution : Param.PostStim- Param.MovWind), 400/Param.NumOfTrailGroup);
-normalize_SpkieCount      = zeros(length(Param.PreStim : Param.TimResolution : Param.PostStim- Param.MovWind) ,length(Param.PreStim : Param.TimResolution : Param.PostStim- Param.MovWind), 400/Param.NumOfTrailGroup);
-normalize_Mean_SpkieCount = zeros(length(Param.PreStim : Param.TimResolution : Param.PostStim- Param.MovWind) ,length(Param.PreStim : Param.TimResolution : Param.PostStim- Param.MovWind), 400/Param.NumOfTrailGroup);
+accuracy_Matrix           = zeros(length(Param.PreStim : Param.TimResolution : Param.PostStim- Param.MovWind) ,length(Param.PreStim : Param.TimResolution : Param.PostStim- Param.MovWind), 400/Param.NumOfTrailGroup);
 
 % read cells and spike
 Param  = construct_FR_Date(Param);
@@ -44,9 +41,9 @@ clc
 for iGroup = 1 : Param.NumOfTrailGroup : 400
     
     time_Train_Ind = 1;
-        
-    for iTimeTrain = Param.PreStim : Param.TimResolution : Param.PostStim - Param.MovWind
     
+    for iTimeTrain = Param.PreStim : Param.TimResolution : Param.PostStim - Param.MovWind
+        
         time_Test_Ind  = 1;
         
         for iTimeTest = Param.PreStim : Param.TimResolution : Param.PostStim - Param.MovWind
@@ -58,29 +55,27 @@ for iGroup = 1 : Param.NumOfTrailGroup : 400
             for cr = 1 : Param.NumCrossVal
                 
                 fprintf([ num2str(cr) ' '])
-                randomized_Cell_Order = randperm(Param.NumOfCells);  % randomize cell order
-                
-                spike_Count_Train = [];
-                for st = 1 : Param.NumUniqStim
+                if Param.TarinTestCellRandomization == true
+                    randomized_Cell_Order_Train = randperm(Param.NumOfCells);  % randomize cell order for train
+                    randomized_Cell_Order_Test  = randperm(Param.NumOfCells);  % randomize cell order for test
+                else
                     
-                    spike_Count_Train = [spike_Count_Train; squeeze(sum(Param.all_Resp{st}(iGroup : iGroup + Param.NumOfTrailGroup -1, iTimeTrain : Param.MovWind + iTimeTrain - 1, randomized_Cell_Order(1:Param.NumOfCells)), 2))];
-                    
+                    randomized_Cell_Order_Train = randperm(Param.NumOfCells);  % randomize cell order for train
+                    randomized_Cell_Order_Test  = randomized_Cell_Order_Train;  % randomize cell order for test
                 end
+                spike_Count_Train = [];
                 spike_Count_Test = [];
                 for st = 1 : Param.NumUniqStim
                     
-                    spike_Count_Test = [spike_Count_Test;   squeeze(sum(Param.all_Resp{st}(iGroup : iGroup + Param.NumOfTrailGroup -1, iTimeTest : Param.MovWind + iTimeTest - 1, randomized_Cell_Order(1:Param.NumOfCells)), 2))];
+                    spike_Count_Train = [spike_Count_Train; squeeze(sum(Param.all_Resp{st}(iGroup : iGroup + Param.NumOfTrailGroup -1, iTimeTrain : Param.MovWind + iTimeTrain - 1, randomized_Cell_Order_Train(1:Param.NumOfCells)), 2))];                   
+                    spike_Count_Test = [spike_Count_Test;   squeeze(sum(Param.all_Resp{st}(iGroup : iGroup + Param.NumOfTrailGroup -1, iTimeTest : Param.MovWind + iTimeTest - 1, randomized_Cell_Order_Test(1:Param.NumOfCells)), 2))];
                     
                 end
                 
-                raw_SpkieCount(time_Train_Ind, time_Test_Ind, Group_Cnt)      = raw_SpkieCount(time_Train_Ind, time_Test_Ind, Group_Cnt)     + sum(spike_Count_Train(:));
-                raw_Mean_SpkieCount(time_Train_Ind, time_Test_Ind, Group_Cnt) = raw_Mean_SpkieCount(time_Train_Ind, time_Test_Ind, Group_Cnt) + mean(spike_Count_Train(:));
                 if Param.NormalizeRF == true
                     spike_Count_Train = zscore(spike_Count_Train, [], 2);
                     spike_Count_Test  = zscore(spike_Count_Test,  [], 2);
                 end
-                normalize_SpkieCount(time_Train_Ind, time_Test_Ind, Group_Cnt)      = normalize_SpkieCount(time_Train_Ind, time_Test_Ind, Group_Cnt)      + sum(spike_Count_Train(:));
-                normalize_Mean_SpkieCount(time_Train_Ind, time_Test_Ind, Group_Cnt) = normalize_Mean_SpkieCount(time_Train_Ind, time_Test_Ind, Group_Cnt) + mean(spike_Count_Train(:));
                 
                 cvp     = cvpartition(N, 'Holdout', Param.PercentOfTest);
                 idxTrn  = training(cvp); % Training set indices
@@ -90,19 +85,19 @@ for iGroup = 1 : Param.NumOfTrailGroup : 400
                     
                     Mdl                                      = fitcdiscr(spike_Count_Train(idxTrn, :), Labels(idxTrn, :));
                     labels                                   = predict(Mdl, spike_Count_Test(idxTest, :));
-                    accyracy_Matrix(time_Train_Ind, time_Test_Ind, Group_Cnt) = accyracy_Matrix(time_Train_Ind, time_Test_Ind, Group_Cnt) + 100*mean(labels==Labels(idxTest, :));
+                    accuracy_Matrix(time_Train_Ind, time_Test_Ind, Group_Cnt) = accuracy_Matrix(time_Train_Ind, time_Test_Ind, Group_Cnt) + 100*mean(labels==Labels(idxTest, :));
                     
                 elseif strcmpi(Param.Classifier, 'nbc')
                     
                     Mdl                                      = fitcnb(spike_Count_Train(idxTrn, :), Labels(idxTrn, :));
                     labels                                   = predict(Mdl, spike_Count_Test(idxTest, :));
-                    accyracy_Matrix(time_Train_Ind, time_Test_Ind, Group_Cnt) = accyracy_Matrix(time_Train_Ind, time_Test_Ind, Group_Cnt) + 100*mean(labels==Labels(idxTest, :));
+                    accuracy_Matrix(time_Train_Ind, time_Test_Ind, Group_Cnt) = accuracy_Matrix(time_Train_Ind, time_Test_Ind, Group_Cnt) + 100*mean(labels==Labels(idxTest, :));
                     
                 elseif strcmpi(Param.Classifier, 'svm')
                     
                     Mdl                                      = fitcecoc(spike_Count_Train(idxTrn, :), Labels(idxTrn, :));
                     labels                                   = predict(Mdl, spike_Count_Test(idxTest, :));
-                    accyracy_Matrix(time_Train_Ind, time_Test_Ind, Group_Cnt) = accyracy_Matrix(time_Train_Ind, time_Test_Ind, Group_Cnt) + 100*mean(labels==Labels(idxTest, :));
+                    accuracy_Matrix(time_Train_Ind, time_Test_Ind, Group_Cnt) = accuracy_Matrix(time_Train_Ind, time_Test_Ind, Group_Cnt) + 100*mean(labels==Labels(idxTest, :));
                     
                 else
                     error('**** The classifier should be either *LDA* or *NBC* (Naive Bayes Classifier)')
@@ -118,66 +113,30 @@ for iGroup = 1 : Param.NumOfTrailGroup : 400
     
     Group_Cnt = Group_Cnt +1;
 end
+save(['accuracy_Matrix_Generalization_' date '.mat'], 'accuracy_Matrix', 'Param')
 %%
-c = colormap;
-
-subplot(231)
-color_Ind = floor(size(c, 1)/size(accyracy_Matrix, 3));
-ci = 1;
-for iGroup = 1 : size(accyracy_Matrix, 3)
+colormap;
+figure(1)
+for iGroup = 1 : size(accuracy_Matrix, 3)
+    subplot(2,2,iGroup)
+    imagesc(accuracy_Matrix(:, end:-1:1, iGroup)./Param.NumCrossVal);
+    aX = gca;
+    aX.TickDir = 'out';
+    aX.Box    = 'off';
+    aX.TickLength = 3*aX.TickLength;
+    aX.XLabel.String = 'Training Window';
+    aX.YLabel.String = 'Testing Window';
+    aX.YTick  = 2 : 26 : size(accuracy_Matrix, 1);
+    aX.XTick  = 1 : 26 : size(accuracy_Matrix, 1);
+    aX.XTickLabel = linspace(0, Param.PostStim - Param.MovWind, length(aX.XTick));
+    aX.YTickLabel = linspace(Param.PostStim - Param.MovWind, 0, length(aX.YTick));
+    caxis([1/Param.NumUniqStim 90])
     
-    plot(mean(accyracy_Matrix(:, :, iGroup)), 'color',c(ci, :) )
-    ci = ci + color_Ind;
-    hold on
-    
-end
-xlabel('Time (ms)')
-ylabel('accuracy')
-
-subplot(232)
-ci = 1;
-for iGroup = 1 : size(raw_SpkieCount, 3)
-    
-    plot(mean(raw_SpkieCount(:, :, iGroup)), 'color',c(ci, :) )
-    ci = ci + color_Ind;
-    hold on
-    
-end
-xlabel('Time (ms)')
-ylabel('spike count (raw)')
-
-subplot(233)
-ci = 1;
-for iGroup = 1 : size(raw_Mean_SpkieCount, 3)
-    
-    plot(mean(raw_Mean_SpkieCount(:,:,iGroup)), 'color',c(ci, :) )
-    ci = ci + color_Ind;
-    hold on
+    h = colorbar;
+    h.Box = 'off';
+    h.TickDirection = 'out';
+    h.TickLength = 3*h.TickLength;
+    h.Label.String = 'Accuracy';
     
 end
-xlabel('Time (ms)')
-ylabel('mean of spike count (raw)')
 
-subplot(234)
-ci = 1;
-for iGroup = 1 : size(normalize_Mean_SpkieCount, 3)
-    
-    plot(mean(normalize_SpkieCount(:, :, iGroup)), 'color',c(ci, :) )
-    ci = ci + color_Ind;
-    hold on
-    
-end
-xlabel('Time (ms)')
-ylabel('spike count (normalized)')
-
-subplot(235)
-ci = 1;
-for iGroup = 1 : size(normalize_Mean_SpkieCount, 3)
-    
-    plot(mean(normalize_Mean_SpkieCount(:, :, iGroup)), 'color',c(ci, :) )
-    ci = ci + color_Ind;
-    hold on
-    
-end
-xlabel('Time (ms)')
-ylabel('mean spike count (normalized)')

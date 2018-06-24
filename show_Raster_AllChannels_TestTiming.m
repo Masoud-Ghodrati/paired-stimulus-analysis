@@ -4,10 +4,10 @@ clc
 
 % load the NEV file and do some pre-processing.
 data_Path = 'F:\CJ194\Data\';
-data_FileName = 'CJ194_datafile028.nev';
+data_FileName = 'CJ194_datafile025.nev';
 
 stimulus_Path = 'F:\CJ194\Stimulus\';
-stimulus_FileName = 'Paired_Stimulus_File_CJ194_0005.mat';
+stimulus_FileName = 'Paired_Stimulus_File_CJ194_0001.mat';
 
 load([stimulus_Path stimulus_FileName])
 
@@ -74,14 +74,14 @@ stim_Images    = stim.allStimFile;  % presented image file
 %% make a spike train for each selected channel
 close all
 SDF_binSize       = 10;  % ms
-time_Window       = 1000*[1 3000];  % time window ro plot spikes (sec)
+time_Window       = 1000*[0 2522];  % time window ro plot spikes (sec)
 line_Color        = [1 0 0; 0 1 0; 0 0 1; 0 0 0]; % line colors for tag
 % Raster plot properties
 YAXIS_LIM          = [0, 192];
-RASTER_AXIS_INCRIM = 2;
+RASTER_AXIS_INCRIM = 0.5;
 RASTER_START_POINT = 50;
 RASTER_LINE        = [YAXIS_LIM(1) + RASTER_START_POINT, YAXIS_LIM(1) + RASTER_START_POINT + RASTER_AXIS_INCRIM];
-RASTER_COLOR       = 0.5*[1 1 1];
+RASTER_COLOR       = 0.0*[1 1 1];
 RASTER_LINE_WIDTH  = 0.1;
 PDF_RESOLUTION = '-r300';
 FILE_NAME = 'PSTH_AND_RASTER';
@@ -103,6 +103,8 @@ for iElectrode = 1 : length(select_Electrodes)
     
     this_Raster = repmat(this_Electrode_Spikes, [2 1]);
 %     line(this_Raster, RASTER_LINE + raster_Increment, 'Color', RASTER_COLOR, 'LineWidth', RASTER_LINE_WIDTH); hold on
+    plot(this_Raster(1,:), RASTER_LINE(1) + raster_Increment + ones(size(this_Raster(1,:))), '.',...
+        'markersize',1,'Color', RASTER_COLOR, 'LineWidth', RASTER_LINE_WIDTH); hold on
     
     raster_Increment = raster_Increment + RASTER_AXIS_INCRIM;
     

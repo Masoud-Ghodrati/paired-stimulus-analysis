@@ -96,15 +96,14 @@ other_Alignments = [0 winSize;
     -leadStimDuration winSize-leadStimDuration;
     -(leadStimDuration + trailStimDuration + ISIDurartin) winSize-(leadStimDuration + trailStimDuration + ISIDurartin)];
 
-group_Trials = 100;  % group every "group_Trails" trials to see the effect of learning
-line_Color   = [1 0 0; 0 1 0; 0 0 1; 0 0 0];
+group_Trials    = 100;  % group every "group_Trails" trials to see the effect of learning
+line_Color      = [1 0 0; 0 1 0; 0 0 1; 0 0 0];
 baseline_Window = round(1000*[stim.durationITI(1)-0.1 stim.durationITI(1)]);
-FigureTab   = true;  % if ture it plots a figure with mutiple tabs, otheriwse, multiple figure
+FigureTab       = true;  % if ture it plots a figure with mutiple tabs, otheriwse, multiple figure
 
 %% find the time window of analysis
 
 if FigureTab
-    %     figure('units','normalized','outerposition',[0 0 1 1]);
     tab_group = uitabgroup; % tabgroup
 end
 select_Alignments = 1;
@@ -155,34 +154,34 @@ for iElectrode = 1 : length(select_Electrodes)
     end
     
     plot(mean(all_Resp)), hold on
-    mx = mean(all_Resp);
-    [mymx1, mymxind1] = max(mx(150:end));
-    [mymx2, mymxind2] = max(mx(1:100));
-    plot(mymxind1+150, mymx1, 'ro')
-    h = plot(mymxind2,     mymx2, 'ro');
-    h.Parent.Box = 'off';
-    h.Parent.TickDir = 'out';
-    h.Parent.XLabel.String = 'Time (ms)';
-    h.Parent.YLabel.String = 'Firing Rate (spk/s)';
+    mean_Resp              = mean(all_Resp);
+    time_Wind_1            = [1 100];
+    time_Wind_2            = [150 winSize];
+    [max_Val_1, max_Ind_1] = max(mean_Resp(time_Wind_1(1):time_Wind_1(2)));
+    [max_Val_2, max_Ind_2] = max(mean_Resp(time_Wind_2(1):time_Wind_2(2)));
+    
+    plot(max_Ind_1,max_Val_1, 'ro');
+    hold on
+    h2 = plot(max_Ind_2 + time_Wind_2(1), max_Val_2, 'ro');
+    h2.Parent.Box = 'off';
+    h2.Parent.TickDir = 'out';
+    h2.Parent.XLabel.String = 'Time (ms)';
+    h2.Parent.YLabel.String = 'Firing Rate (spk/s)';
     if FigureTab
         thistab.Title = ['Chn ' num2str(iElectrode)];
     else
         suptitle = ['Chn ' num2str(iElectrode)];
     end
     
-    cell_Ind_Max(:, iElectrode) = [mymxind1+150; mymxind2];
+    cell_Analysis_Wind(:, iElectrode) = [max_Ind_1; max_Ind_2 + time_Wind_2(1)];
 end
 
 
-%%
-figure
-
-line_Color2 = colormap('parula');
-
+%% calculate some spike count stat (e.g., FR change ration over time)
 for iElectrode = 1 : length(select_Electrodes)
     
-    sdf = conv(ones(1, SDF_binSize), sTrain(iElectrode,:))*(1/(SDF_binSize/1000));
-    
+    sdf      = conv(ones(1, SDF_binSize), sTrain(iElectrode,:))*(1/(SDF_binSize/1000));
+    pair_Ind = 1;
     for iTrailStim = 1 : length(stim_TrailStim)
         
         for iLeadStim = 1 : length(stim_LeadStim)
@@ -195,52 +194,58 @@ for iElectrode = 1 : length(select_Electrodes)
                     case 1
                         % PSTH aligned to the start of first event
                         this_Stim_OnTime1  = round(stim_OnTime1(this_Pair));
-                        this_Epochs = repmat(1:winSize, [length(this_Pair) 1]) + [this_Stim_OnTime1  + other_Alignments(1, 1)-1]';
-                        resps = sdf(this_Epochs);
+                        this_Epochs        = repmat(1:winSize, [length(this_Pair) 1]) + [this_Stim_OnTime1  + other_Alignments(1, 1)-1]';
+                        resps              = sdf(this_Epochs);
                     case 2
                         % PSTH aligned to the end of first event
                         this_stim_OffTime1 = round(stim_OffTime1(this_Pair));
-                        this_Epochs = repmat(1:winSize, [length(this_Pair) 1]) + [this_stim_OffTime1 + other_Alignments(2, 1)-1]';
-                        resps = sdf(this_Epochs);
+                        this_Epochs        = repmat(1:winSize, [length(this_Pair) 1]) + [this_stim_OffTime1 + other_Alignments(2, 1)-1]';
+                        resps              = sdf(this_Epochs);
                     case 3
                         % PSTH aligned to the start of ISI
                         this_stim_OffTime2 = round(stim_OffTime2(this_Pair));
-                        this_Epochs = repmat(1:winSize, [length(this_Pair) 1]) + [this_stim_OffTime2 + other_Alignments(3, 1)-1]';
-                        resps = sdf(this_Epochs);
+                        this_Epochs        = repmat(1:winSize, [length(this_Pair) 1]) + [this_stim_OffTime2 + other_Alignments(3, 1)-1]';
+                        resps              = sdf(this_Epochs);
                     case 4
                         % PSTH aligned to the start of comments
                         this_comments      = round(comments(this_Pair));
-                        this_Epochs = repmat(1:winSize, [length(this_Pair) 1]) + [this_comments       + other_Alignments(3, 1)-1]';
-                        resps = sdf(this_Epochs);
+                        this_Epochs        = repmat(1:winSize, [length(this_Pair) 1]) + [this_comments       + other_Alignments(3, 1)-1]';
+                        resps              = sdf(this_Epochs);
                 end
                 
-                remaining_Trials = mod(length(this_Pair),group_Trials);
+                remaining_Trials = mod(length(this_Pair), group_Trials);
                 
-                Ind = 1;
-                peak_2 = []; peak_1 = []; rate_all = [];
-                peak_fr = [];
-                for iTrial = 1 : group_Trials: length(this_Pair)
-                    if (iTrial + group_Trials-1)<=length(this_Pair)
-                        peak_fr(Ind, :) = mean(resps(iTrial : iTrial + group_Trials-1, :));
-                        peak_2(Ind) = mean(mean(resps(iTrial : iTrial + group_Trials-1, cell_Ind_Max(1, iElectrode)-30 : cell_Ind_Max(1, iElectrode)+30 ), 2));
-                        peak_1(Ind) = mean(mean(resps(iTrial : iTrial + group_Trials-1, cell_Ind_Max(2, iElectrode)-30 : cell_Ind_Max(2, iElectrode)+30 ), 2));
-                        rate_all(Ind) = peak_1(Ind)/peak_2(Ind);
+                groupd_Ind              = 1;
+                peak_Time_1             = [];
+                peak_Time_2             = [];
+                peak_rate               = [];
+                mean_Group_FR           = [];
+                analysis_Wind_HalfWidth = 15;
+                for iTrial = 1 : group_Trials : length(this_Pair)
+                    if (iTrial + group_Trials-1) <= length(this_Pair)
+                        
+                        mean_Group_FR(groupd_Ind, :)  = mean(resps(iTrial : iTrial + group_Trials-1, :));
+                        peak_Time_1(groupd_Ind)       = mean(mean(resps(iTrial : iTrial + group_Trials-1, cell_Analysis_Wind(1, iElectrode)-analysis_Wind_HalfWidth : cell_Analysis_Wind(1, iElectrode)+analysis_Wind_HalfWidth ), 2));
+                        peak_Time_2(groupd_Ind)       = mean(mean(resps(iTrial : iTrial + group_Trials-1, cell_Analysis_Wind(2, iElectrode)-analysis_Wind_HalfWidth : cell_Analysis_Wind(2, iElectrode)+analysis_Wind_HalfWidth ), 2));
+                        peak_rate(groupd_Ind)         = peak_Time_1(groupd_Ind)/peak_Time_2(groupd_Ind);
                         
                     else
-                        peak_fr(Ind, :) = mean(resps(iTrial : end, :));
-                        peak_2(Ind) = mean(mean(resps(iTrial : end, cell_Ind_Max(1, iElectrode)-30 : cell_Ind_Max(1, iElectrode)+30 ), 2));
-                        peak_1(Ind) = mean(mean(resps(iTrial : end, cell_Ind_Max(2, iElectrode)-30 : cell_Ind_Max(2, iElectrode)+30 ), 2));
-                        rate_all(Ind) = peak_1(Ind)/peak_2(Ind);
+                        mean_Group_FR(groupd_Ind, :) = mean(resps(iTrial : end, :));
+                        peak_Time_2(groupd_Ind)      = mean(mean(resps(iTrial : end, cell_Analysis_Wind(1, iElectrode)-analysis_Wind_HalfWidth : cell_Analysis_Wind(1, iElectrode)+analysis_Wind_HalfWidth ), 2));
+                        peak_Time_1(groupd_Ind)      = mean(mean(resps(iTrial : end, cell_Analysis_Wind(2, iElectrode)-analysis_Wind_HalfWidth : cell_Analysis_Wind(2, iElectrode)+analysis_Wind_HalfWidth ), 2));
+                        peak_rate(groupd_Ind)        = peak_Time_2(groupd_Ind)/peak_Time_1(groupd_Ind);
                         
                     end
                     
-                    Ind = Ind  + 1;
+                    groupd_Ind = groupd_Ind  + 1;
+                    
                 end
                 
                 
-                data_Resp1{1, iTrailStim}(:,:, iElectrode) =  [peak_1;peak_2;rate_all];
+                fr_Stat_Matrix{pair_Ind}(:,:, iElectrode) = [peak_Time_1; peak_Time_2; peak_rate];
+                fr_mean_Pop{pair_Ind}(:,:, iElectrode)    = mean_Group_FR;
+                pair_Ind = pair_Ind + 1;
                 
-                data_Resp2{1, iTrailStim}(:,:, iElectrode) =  peak_fr;
             end
             
         end
@@ -248,22 +253,264 @@ for iElectrode = 1 : length(select_Electrodes)
     end
     
 end
-figure
-for iTrailStim = 1 : length(stim_TrailStim)
-    subplot(1,6,iTrailStim)
+%% plot the results
+close all
+
+figure(1)
+line_Color   = colormap('parula');
+select_Param = 1;
+x_Scaling    = 10;
+for iPair = 1 : length(fr_Stat_Matrix)
+    subplot(1,6, iPair)
+    color_Ind    = 1;
     for iElectrode = 1 : length(select_Electrodes)
         
-        ydata = [];
-        for iTime = 2 : Ind-1
-            ydata(:, iTime-1) = ((data_Resp1{1,iTrailStim}(:,iTime,iElectrode) - data_Resp1{1,iTrailStim}(:,1,iElectrode))./data_Resp1{1,iTrailStim}(:,1,iElectrode));
-        end
-        h =  plot(ydata(3,[1 3]), 'r'); hold on
-
+        xAXIS_Rand_Pos     = x_Scaling*randn;
+        h1                 = plot([group_Trials : group_Trials : length(this_Pair)]+xAXIS_Rand_Pos, fr_Stat_Matrix{iPair}(select_Param, : , iElectrode));
+        h1.Color           = 0.7*[1 1 1];
+        h1.LineWidth       = 0.5;
+        hold on
+        h2                 = scatter([group_Trials : group_Trials : length(this_Pair)]+xAXIS_Rand_Pos, fr_Stat_Matrix{iPair}(select_Param, : , iElectrode), 20);
+        h2.MarkerEdgeColor = 'none';
+        h2.MarkerFaceColor = line_Color(color_Ind, :);
+        h2.MarkerFaceAlpha = 0.5;
+        
+        color_Ind          = color_Ind + 1;
     end
-    h.Parent.Box = 'off';
-    h.Parent.TickDir = 'out';
-    if iTrailStim == 1
+    this_Pop_Data = fr_Stat_Matrix{iPair}(select_Param, : ,:);
+    this_Pop_Data = squeeze(this_Pop_Data)';
+    this_Pop_Data = this_Pop_Data(sum(isinf(this_Pop_Data),2) < 1, :);
+    h2 = errorbar([group_Trials : group_Trials : length(this_Pair)], mean(this_Pop_Data), std(this_Pop_Data)./sqrt(size(this_Pop_Data, 1)), 'or');
+    h2.CapSize   = 0;
+    h2.LineWidth = 2;
+    h2.Color     = [1 0 0];
+    aX          = gca;
+    aX.TickDir  = 'out';
+    aX.XTick    = group_Trials : group_Trials : length(this_Pair);
+    aX.XLim     = [50 450];
+    aX.Box      = 'off';
+    
+    if iPair == 1
+        
+        aX.XLabel.String = '# Trials';
+        aX.YLabel.String = 'Firing Rate';
+        
+    end
+end
 
-        h.Parent.YLabel.String = '% change';
+
+figure(2)
+select_Param = 2;
+for iPair = 1 : length(fr_Stat_Matrix)
+    subplot(1,6, iPair)
+    color_Ind    = 1;
+    for iElectrode = 1 : length(select_Electrodes)
+        
+        xAXIS_Rand_Pos     = x_Scaling*randn;
+        h1                 = plot([group_Trials : group_Trials : length(this_Pair)]+xAXIS_Rand_Pos, fr_Stat_Matrix{iPair}(select_Param, : , iElectrode));
+        h1.Color           = 0.7*[1 1 1];
+        h1.LineWidth       = 0.5;
+        hold on
+        h2                 = scatter([group_Trials : group_Trials : length(this_Pair)]+xAXIS_Rand_Pos, fr_Stat_Matrix{iPair}(select_Param, : , iElectrode), 20);
+        h2.MarkerEdgeColor = 'none';
+        h2.MarkerFaceColor = line_Color(color_Ind, :);
+        h2.MarkerFaceAlpha = 0.5;
+        
+        color_Ind          = color_Ind + 1;
+    end
+    this_Pop_Data = fr_Stat_Matrix{iPair}(select_Param, : ,:);
+    this_Pop_Data = squeeze(this_Pop_Data)';
+    this_Pop_Data = this_Pop_Data(sum(isinf(this_Pop_Data),2) < 1, :);
+    h2 = errorbar([group_Trials : group_Trials : length(this_Pair)], mean(this_Pop_Data), std(this_Pop_Data)./sqrt(size(this_Pop_Data, 1)), 'or');
+    h2.CapSize   = 0;
+    h2.LineWidth = 2;
+    h2.Color     = [1 0 0];
+    aX          = gca;
+    aX.TickDir  = 'out';
+    aX.XTick    = group_Trials : group_Trials : length(this_Pair);
+    aX.XLim     = [50 450];
+    aX.Box      = 'off';
+    
+    if iPair == 1
+        
+        aX.XLabel.String = '# Trials';
+        aX.YLabel.String = 'Firing Rate';
+        
+    end
+end
+
+
+figure(3)
+select_Param = 3;
+for iPair = 1 : length(fr_Stat_Matrix)
+    subplot(1,6, iPair)
+    color_Ind    = 1;
+    for iElectrode = 1 : length(select_Electrodes)
+        
+        xAXIS_Rand_Pos     = x_Scaling*randn;
+        h1                 = plot([group_Trials : group_Trials : length(this_Pair)]+xAXIS_Rand_Pos, fr_Stat_Matrix{iPair}(select_Param, : , iElectrode));
+        h1.Color           = 0.7*[1 1 1];
+        h1.LineWidth       = 0.5;
+        hold on
+        h2                 = scatter([group_Trials : group_Trials : length(this_Pair)]+xAXIS_Rand_Pos, fr_Stat_Matrix{iPair}(select_Param, : , iElectrode), 20);
+        h2.MarkerEdgeColor = 'none';
+        h2.MarkerFaceColor = line_Color(color_Ind, :);
+        h2.MarkerFaceAlpha = 0.5;
+        
+        color_Ind          = color_Ind + 1;
+    end
+    this_Pop_Data = fr_Stat_Matrix{iPair}(select_Param, : ,:);
+    this_Pop_Data = squeeze(this_Pop_Data)';
+    this_Pop_Data = this_Pop_Data(sum(isinf(this_Pop_Data),2) < 1, :);
+    h2 = errorbar([group_Trials : group_Trials : length(this_Pair)], nanmedian(this_Pop_Data), nanstd(this_Pop_Data)./sqrt(size(this_Pop_Data, 1)), 'or');
+    h2.CapSize   = 0;
+    h2.LineWidth = 2;
+    h2.Color     = [1 0 0];
+    aX          = gca;
+    aX.TickDir  = 'out';
+    aX.XTick    = group_Trials : group_Trials : length(this_Pair);
+    aX.XLim     = [50 450];
+    aX.Box      = 'off';
+    
+    if iPair == 1
+        
+        aX.XLabel.String = '# Trials';
+        aX.YLabel.String = 'Firing Rate';
+        
+    end
+end
+
+figure(4)
+select_Param = 1;
+for iPair = 1 : length(fr_Stat_Matrix)
+    subplot(1,6, iPair)
+    color_Ind    = 1;
+    for iElectrode = 1 : length(select_Electrodes)
+        
+        xAXIS_Rand_Pos     = x_Scaling*randn;
+        
+        this_Cell_Data     = fr_Stat_Matrix{iPair}(select_Param, : , iElectrode);
+        this_Cell_FR_Change= (this_Cell_Data(2:end) - this_Cell_Data(1))./this_Cell_Data(1);
+        h1                 = plot([2*group_Trials : group_Trials : length(this_Pair)]+xAXIS_Rand_Pos, this_Cell_FR_Change);
+        h1.Color           = 0.7*[1 1 1];
+        h1.LineWidth       = 0.5;
+        hold on
+        h2                 = scatter([2*group_Trials : group_Trials : length(this_Pair)]+xAXIS_Rand_Pos, this_Cell_FR_Change, 20);
+        h2.MarkerEdgeColor = 'none';
+        h2.MarkerFaceColor = line_Color(color_Ind, :);
+        h2.MarkerFaceAlpha = 0.5;
+        
+        color_Ind          = color_Ind + 1;
+    end
+    this_Pop_Data   = fr_Stat_Matrix{iPair}(select_Param, : ,:);
+    this_Pop_Data   = squeeze(this_Pop_Data)';
+    this_FR_Diff    = this_Pop_Data(:,2:end) - this_Pop_Data(:, 1);
+    this_Pop_Change = this_FR_Diff./this_Pop_Data(:, 1);
+    this_Pop_Change = this_Pop_Change(sum(isinf(this_Pop_Change),2) < 1, :);
+    h2 = errorbar([2*group_Trials : group_Trials : length(this_Pair)], nanmedian(this_Pop_Change), nanstd(this_Pop_Change)./sqrt(size(this_Pop_Change, 1)), 'or');
+    h2.CapSize   = 0;
+    h2.LineWidth = 2;
+    h2.Color     = [1 0 0];
+    aX          = gca;
+    aX.TickDir  = 'out';
+    aX.XTick    = 2*group_Trials : group_Trials : length(this_Pair);
+    aX.XLim     = [150 450];
+    aX.Box      = 'off';
+    
+    if iPair == 1
+        
+        aX.XLabel.String = '# Trials';
+        aX.YLabel.String = 'Proportion of change';
+        
+    end
+end
+
+figure(5)
+select_Param = 2;
+for iPair = 1 : length(fr_Stat_Matrix)
+    subplot(1,6, iPair)
+    color_Ind    = 1;
+    for iElectrode = 1 : length(select_Electrodes)
+        
+        xAXIS_Rand_Pos     = x_Scaling*randn;
+        
+        this_Cell_Data     = fr_Stat_Matrix{iPair}(select_Param, : , iElectrode);
+        this_Cell_FR_Change= (this_Cell_Data(2:end) - this_Cell_Data(1))./this_Cell_Data(1);
+        h1                 = plot([2*group_Trials : group_Trials : length(this_Pair)]+xAXIS_Rand_Pos, this_Cell_FR_Change);
+        h1.Color           = 0.7*[1 1 1];
+        h1.LineWidth       = 0.5;
+        hold on
+        h2                 = scatter([2*group_Trials : group_Trials : length(this_Pair)]+xAXIS_Rand_Pos, this_Cell_FR_Change, 20);
+        h2.MarkerEdgeColor = 'none';
+        h2.MarkerFaceColor = line_Color(color_Ind, :);
+        h2.MarkerFaceAlpha = 0.5;
+        
+        color_Ind          = color_Ind + 1;
+    end
+    this_Pop_Data   = fr_Stat_Matrix{iPair}(select_Param, : ,:);
+    this_Pop_Data   = squeeze(this_Pop_Data)';
+    this_FR_Diff    = this_Pop_Data(:,2:end) - this_Pop_Data(:, 1);
+    this_Pop_Change = this_FR_Diff./this_Pop_Data(:, 1);
+    this_Pop_Change = this_Pop_Change(sum(isinf(this_Pop_Change),2) < 1, :);
+    h2 = errorbar([2*group_Trials : group_Trials : length(this_Pair)], nanmedian(this_Pop_Change), nanstd(this_Pop_Change)./sqrt(size(this_Pop_Change, 1)), 'or');
+    h2.CapSize   = 0;
+    h2.LineWidth = 2;
+    h2.Color     = [1 0 0];
+    aX          = gca;
+    aX.TickDir  = 'out';
+    aX.XTick    = 2*group_Trials : group_Trials : length(this_Pair);
+    aX.XLim     = [150 450];
+    aX.Box      = 'off';
+    
+    if iPair == 1
+        
+        aX.XLabel.String = '# Trials';
+        aX.YLabel.String = 'Proportion of change';
+        
+    end
+end
+
+figure(6)
+select_Param = 3;
+for iPair = 1 : length(fr_Stat_Matrix)
+    subplot(1,6, iPair)
+    color_Ind    = 1;
+    for iElectrode = 1 : length(select_Electrodes)
+        
+        xAXIS_Rand_Pos     = x_Scaling*randn;
+        
+        this_Cell_Data     = fr_Stat_Matrix{iPair}(select_Param, : , iElectrode);
+        this_Cell_FR_Change= (this_Cell_Data(2:end) - this_Cell_Data(1))./this_Cell_Data(1);
+        h1                 = plot([2*group_Trials : group_Trials : length(this_Pair)]+xAXIS_Rand_Pos, this_Cell_FR_Change);
+        h1.Color           = 0.7*[1 1 1];
+        h1.LineWidth       = 0.5;
+        hold on
+        h2                 = scatter([2*group_Trials : group_Trials : length(this_Pair)]+xAXIS_Rand_Pos, this_Cell_FR_Change, 20);
+        h2.MarkerEdgeColor = 'none';
+        h2.MarkerFaceColor = line_Color(color_Ind, :);
+        h2.MarkerFaceAlpha = 0.5;
+        
+        color_Ind          = color_Ind + 1;
+    end
+    this_Pop_Data   = fr_Stat_Matrix{iPair}(select_Param, : ,:);
+    this_Pop_Data   = squeeze(this_Pop_Data)';
+    this_FR_Diff    = this_Pop_Data(:,2:end) - this_Pop_Data(:, 1);
+    this_Pop_Change = this_FR_Diff./this_Pop_Data(:, 1);
+    this_Pop_Change = this_Pop_Change(sum(isinf(this_Pop_Change),2) < 1, :);
+    h2 = errorbar([2*group_Trials : group_Trials : length(this_Pair)], nanmedian(this_Pop_Change), nanstd(this_Pop_Change)./sqrt(size(this_Pop_Change, 1)), 'or');
+    h2.CapSize   = 0;
+    h2.LineWidth = 2;
+    h2.Color     = [1 0 0];
+    aX          = gca;
+    aX.TickDir  = 'out';
+    aX.XTick    = 2*group_Trials : group_Trials : length(this_Pair);
+    aX.XLim     = [150 450];
+    aX.Box      = 'off';
+    
+    if iPair == 1
+        
+        aX.XLabel.String = '# Trials';
+        aX.YLabel.String = 'Proportion of change';
+        
     end
 end

@@ -44,9 +44,8 @@ comment_txt        = reshape(cStruct.Comments,[],92);
 trial_NumCellArray = cellfun(@cell2mat,match(2:end), 'UniformOutput', false);
 % trial_NumArray     = cellfun(@str2num, trial_NumCellArray, 'UniformOutput', false);
 % trial_NumArray     = trial_NumArray(~ismember(1:length(trial_NumArray), [3829]));
-trial_NumArray     = cellfun(@str2num, trial_NumCellArray(~ismember(1:length(trial_NumCellArray), [])), 'UniformOutput', false);
-trial_NumArray    = trial_NumArray(1:end-1);
-find(diff(cell2mat(trial_NumArray))'>1)
+trial_NumArray     = cellfun(@str2num, trial_NumCellArray(~ismember(1:length(trial_NumCellArray), [2329  4119])), 'UniformOutput', false);
+find(diff(cell2mat(trial_NumArray))'>1)+1
 
 [match, noMatch]   = regexp(cellstr(comment_txt(:, 23:38)),'\d','match','forceCellOutput');
 trial_LeadCellArray= cellfun(@cell2mat,match(2:end), 'UniformOutput', false);
@@ -65,10 +64,10 @@ trial_SampleArray  = cellfun(@str2num, trial_SampleCellArray, 'UniformOutput', f
 
 comment_IDs        = [cell2mat(trial_LeadArray)'; cell2mat(trial_TrialArray)'; cell2mat(trial_SampleArray)']; 
 
-if any(any(comment_IDs - stim.allStimTrain(:, [1:3827 3833:end]))) == true
+if any(any(comment_IDs - stim.allStimTrain(:, :))) == true
     error('number of stim in stim file and comments doesnt match')
 end
-comments           = comments1;
+comments           = comments1(~ismember(1:length(comments1), [1 2329+1  4119+1]));
 
 % Digital Timings
 RawDIO        = dat.Data.SerialDigitalIO.UnparsedData;  % DIO tags
@@ -76,6 +75,8 @@ RawTimes      = double(dat.Data.SerialDigitalIO.TimeStamp)/tRes*1000;  % DIO dig
 DIO           = mod(RawDIO, 128);   % digital line without photodiode
 stim_OnTime1  = RawTimes(DIO == 2);  % stim 1 onset
 stim_OffTime1 = RawTimes(DIO == 3);  % stim 1 offset
+stim_OffTime1 = stim_OffTime1([1:2097 2099:end]);
+
 stim_OnTime2  = RawTimes(DIO == 4);  % stim 2 onset
 stim_OffTime2 = RawTimes(DIO == 5);  % stim 1 offset
 

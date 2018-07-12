@@ -4,10 +4,10 @@ clc
 
 % load the NEV file and do some pre-processing.
 data_Path = 'F:\CJ194\Data\';
-data_FileName = 'CJ194_datafile028.nev';
+data_FileName = 'CJ194_datafile030.nev';
 
 stimulus_Path = 'F:\CJ194\Stimulus\';
-stimulus_FileName = 'Paired_Stimulus_File_CJ194_0005.mat';
+stimulus_FileName = 'Paired_Stimulus_File_CJ194_0007.mat';
 
 load([stimulus_Path stimulus_FileName])
 
@@ -39,6 +39,7 @@ stim_OffTime1 = RawTimes(DIO == 3);  % stim 1 offset
 stim_OnTime2  = RawTimes(DIO == 4);  % stim 2 onset
 stim_OffTime2 = RawTimes(DIO == 5);  % stim 1 offset
 
+
 % Channels information
 electrodes        = unique(dat.Data.Spikes.Electrode);  % electrode numbers
 if strcmp(data_FileName, 'CJ194_datafile025.nev')
@@ -50,7 +51,11 @@ elseif strcmp(data_FileName, 'CJ194_datafile026.nev')
 elseif strcmp(data_FileName, 'CJ194_datafile028.nev')
     [stim_OnTime1, stim_OffTime1, stim_OffTime2, comments] = correct_Timing_CJ194_datafile028(stim_OnTime1, stim_OffTime1, stim_OffTime2, dat, stim);
     select_Electrodes = [1:12 17 19 21 23 26 27 29 32 32 37 40 41 42 44 46 50 51:57 66 73 75 76 83 85 86 87]; % 28
+elseif strcmp(data_FileName, 'CJ194_datafile030.nev')
+    [stim_OnTime1, stim_OffTime1, stim_OffTime2, comments] = correct_Timing_CJ194_datafile030(stim_OnTime1, stim_OffTime1, stim_OffTime2, dat, stim);
+    select_Electrodes = [1:12 14:17 19 21 22 26 27 29 31 32 37 40:42 44 46 50:57 63 64 66 73 75 76 83 84:87 93:96];
 else
+    
     cStruct   = dat.Data.Comments;  % comments
     comments1 = double([cStruct.TimeStamp])/tRes*1000;  % comment times (ms)
     % txt = reshape(NEV.Data.Comments.Text,[],92);
@@ -62,6 +67,7 @@ else
     % comments           = comments1(~[1 0 diff(cell2mat(trial_NumArray))'>1]);
     
     comments      = comments1;
+    select_Electrodes = 1:96;
 end
 
 % Photodiode
@@ -77,11 +83,11 @@ else
 end
 stim_Train     = stim.allStimTrain;  % stimulus train. This should be a matrix of 3*n. 1st row: leading stim name/ind, 2nd trailing stim name/ind, last sample number
 stim_Images    = stim.allStimFile;  % presented image file
-if (size([stim_OnTime1; stim_OffTime1; stim_OffTime2; comments], 2) - length(stim_Train)) ~= 0
-    
-    error('DIO/Comments length does not match with stim length')
-    
-end
+% if (size([stim_OnTime1; stim_OffTime1; stim_OffTime2; comments], 2) - length(stim_Train)) ~= 0
+%     
+%     error('DIO/Comments length does not match with stim length')
+%     
+% end
 
 %% psth setting
 leadStimDuration  = 1000*stim.durationLeadStim;  % presentation time of leading stimulus
@@ -94,7 +100,7 @@ winSize           = leadStimDuration + trailStimDuration + ISIDurartin + pre_Sti
 % there can be 4 Alignments: start of 1st stim, end of 1st stim, start of
 % ISI, comments
 other_Alignments  = [-pre_Stim; -(leadStimDuration + pre_Stim); -(leadStimDuration + trailStimDuration + ISIDurartin + pre_Stim)];
-group_Trials      = 60;  % group every "group_Trails" trials to see the effect of learning
+group_Trials      = 188;  % group every "group_Trails" trials to see the effect of learning
 select_Alignments = 1;
 
 %% make a spike train for each selected channel

@@ -9,10 +9,10 @@ clc
 % stimulus_Path = '\\storage.erc.monash.edu\shares\R-MNHS-Syncitium\Shared\Marmoset data\CJ194 Stimulus Files\';
 % stimulus_FileName = 'Paired_Stimulus_File_CJ194_0001.mat';
 data_Path = 'F:\CJ194\Data\';
-data_FileName = 'CJ194_datafile028.nev';
+data_FileName = 'CJ194_datafile030.nev';
 
 stimulus_Path = 'F:\CJ194\Stimulus\';
-stimulus_FileName = 'Paired_Stimulus_File_CJ194_0005.mat';
+stimulus_FileName = 'Paired_Stimulus_File_CJ194_0007.mat';
 
 load([stimulus_Path stimulus_FileName])
 
@@ -44,6 +44,7 @@ stim_OffTime1 = RawTimes(DIO == 3);  % stim 1 offset
 stim_OnTime2  = RawTimes(DIO == 4);  % stim 2 onset
 stim_OffTime2 = RawTimes(DIO == 5);  % stim 1 offset
 
+
 % Channels information
 electrodes        = unique(dat.Data.Spikes.Electrode);  % electrode numbers
 if strcmp(data_FileName, 'CJ194_datafile025.nev')
@@ -55,7 +56,11 @@ elseif strcmp(data_FileName, 'CJ194_datafile026.nev')
 elseif strcmp(data_FileName, 'CJ194_datafile028.nev')
     [stim_OnTime1, stim_OffTime1, stim_OffTime2, comments] = correct_Timing_CJ194_datafile028(stim_OnTime1, stim_OffTime1, stim_OffTime2, dat, stim);
     select_Electrodes = [1:12 17 19 21 23 26 27 29 32 32 37 40 41 42 44 46 50 51:57 66 73 75 76 83 85 86 87]; % 28
+elseif strcmp(data_FileName, 'CJ194_datafile030.nev')
+    [stim_OnTime1, stim_OffTime1, stim_OffTime2, comments] = correct_Timing_CJ194_datafile030(stim_OnTime1, stim_OffTime1, stim_OffTime2, dat, stim);
+    select_Electrodes = [1:12 14:17 19 21 22 26 27 29 31 32 37 40:42 44 46 50:57 63 64 66 73 75 76 83 84:87 93:96];
 else
+    
     cStruct   = dat.Data.Comments;  % comments
     comments1 = double([cStruct.TimeStamp])/tRes*1000;  % comment times (ms)
     % txt = reshape(NEV.Data.Comments.Text,[],92);
@@ -67,8 +72,8 @@ else
     % comments           = comments1(~[1 0 diff(cell2mat(trial_NumArray))'>1]);
     
     comments      = comments1;
+    select_Electrodes = 1:96;
 end
-
 % Photodiode
 PDTimes = double(dat.Data.Spikes.TimeStamp(dat.Data.Spikes.Electrode == 129))/tRes*1000;
 PDTimes = PDTimes(PDTimes > comments(1));

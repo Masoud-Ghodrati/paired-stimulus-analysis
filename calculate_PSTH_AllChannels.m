@@ -4,10 +4,10 @@ clc
 
 % load the NEV file and do some pre-processing.
 data_Path = 'F:\CJ194\Data\';
-data_FileName = 'CJ194_datafile028.nev';
+data_FileName = 'CJ194_datafile030.nev';
 
 stimulus_Path = 'F:\CJ194\Stimulus\';
-stimulus_FileName = 'Paired_Stimulus_File_CJ194_0005.mat';
+stimulus_FileName = 'Paired_Stimulus_File_CJ194_0007.mat';
 
 load([stimulus_Path stimulus_FileName])
 
@@ -50,7 +50,11 @@ elseif strcmp(data_FileName, 'CJ194_datafile026.nev')
 elseif strcmp(data_FileName, 'CJ194_datafile028.nev')
     [stim_OnTime1, stim_OffTime1, stim_OffTime2, comments] = correct_Timing_CJ194_datafile028(stim_OnTime1, stim_OffTime1, stim_OffTime2, dat, stim);
     select_Electrodes = [1:12 17 19 21 23 26 27 29 32 32 37 40 41 42 44 46 50 51:57 66 73 75 76 83 85 86 87]; % 28
+elseif strcmp(data_FileName, 'CJ194_datafile030.nev')
+    [stim_OnTime1, stim_OffTime1, stim_OffTime2, comments] = correct_Timing_CJ194_datafile030(stim_OnTime1, stim_OffTime1, stim_OffTime2, dat, stim);
+    select_Electrodes = [1:12 14:17 19 21 22 26 27 29 31 32 37 40:42 44 46 50:57 63 64 66 73 75 76 83 84:87 93:96];
 else
+    
     cStruct   = dat.Data.Comments;  % comments
     comments1 = double([cStruct.TimeStamp])/tRes*1000;  % comment times (ms)
     % txt = reshape(NEV.Data.Comments.Text,[],92);
@@ -62,6 +66,7 @@ else
     % comments           = comments1(~[1 0 diff(cell2mat(trial_NumArray))'>1]);
     
     comments      = comments1;
+    select_Electrodes = 1:96;
 end
 
 %% extract stimulus information
@@ -108,7 +113,7 @@ if FigureTab
 end
 
 for iElectrode = 1 : length(select_Electrodes)
-
+    
     if FigureTab
         thistab = uitab(tab_group);  % build a tab
         axes('Parent', thistab); % somewhere to plot
@@ -116,20 +121,20 @@ for iElectrode = 1 : length(select_Electrodes)
         figure('units','normalized','outerposition',[0 0 1 1]);
     end
     sdf = conv(ones(1, SDF_binSize), sTrain(iElectrode,:))*(1/(SDF_binSize/1000));
-
+    
     iPanel = 1;
     for iLeadStim = 1 : length(stim_LeadStim)
         for iTrailStim = 1 : length(stim_TrailStim)
-
+            
             subplot(6, 6, iPanel)
             this_Pair = find(stim_Train(1, :) == stim_LeadStim(iLeadStim) &  stim_Train(2, :) == stim_TrailStim(iTrailStim));
-
+            
             % get some timing event for different alignments
             this_Stim_OnTime1  = round(stim_OnTime1(this_Pair));
             this_stim_OffTime1 = round(stim_OffTime1(this_Pair));
             this_stim_OffTime2 = round(stim_OffTime2(this_Pair));
             this_comments      = round(comments(this_Pair));
-
+            
             % PSTH aligned to the start of first event
             this_Epochs = repmat(1:winSize, [length(this_Pair) 1]) + [this_Stim_OnTime1  + other_Alignments(1, 1)-1]';
             resps1 = sdf(this_Epochs);
@@ -142,7 +147,7 @@ for iElectrode = 1 : length(select_Electrodes)
             % PSTH aligned to the start of comments
             this_Epochs = repmat(1:winSize, [length(this_Pair) 1]) + [this_comments      + other_Alignments(3, 1)-1]';
             resps4 = sdf(this_Epochs);
-
+            
             plot(1:winSize, mean(resps1), 'color', line_Color(1, :)), hold on
             plot(1:winSize, mean(resps2), 'color', line_Color(2, :)), hold on
             plot(1:winSize, mean(resps3), 'color', line_Color(3, :)), hold on
@@ -156,7 +161,7 @@ for iElectrode = 1 : length(select_Electrodes)
             iPanel = iPanel + 1;
         end
     end
-
+    
     if FigureTab
         thistab.Title = ['Chn ' num2str(iElectrode)];
     else
@@ -189,7 +194,7 @@ for iElectrode = 1 : length(select_Electrodes)
             
             subplot(6, 6, iPanel)
             this_Pair = find(stim_Train(1, :) == stim_LeadStim(iLeadStim) &  stim_Train(2, :) == stim_TrailStim(iTrailStim));
-             
+            
             switch select_Alignments
                 case 1
                     % PSTH aligned to the start of first event
@@ -205,14 +210,14 @@ for iElectrode = 1 : length(select_Electrodes)
                 case 2
                     
                     % PSTH aligned to the end of first event
-
+                    
                     this_stim_OffTime1 = round(stim_OffTime1(this_Pair));
                     this_Epochs = repmat(1:winSize, [length(this_Pair) 1]) + [this_stim_OffTime1 + other_Alignments(2, 1)-1]';
                     resps = sdf(this_Epochs);
                 case 3
                     
                     % PSTH aligned to the start of ISI
-                                        this_stim_OffTime2 = round(stim_OffTime2(this_Pair));
+                    this_stim_OffTime2 = round(stim_OffTime2(this_Pair));
                     this_Epochs = repmat(1:winSize, [length(this_Pair) 1]) + [this_stim_OffTime2 + other_Alignments(3, 1)-1]';
                     resps = sdf(this_Epochs);
                 case 4

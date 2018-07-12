@@ -9,10 +9,10 @@ clc
 % stimulus_Path = '\\storage.erc.monash.edu\shares\R-MNHS-Syncitium\Shared\Marmoset data\CJ194 Stimulus Files\';
 % stimulus_FileName = 'Paired_Stimulus_File_CJ194_0001.mat';
 data_Path = 'F:\CJ194\Data\';
-data_FileName = 'CJ194_datafile030.nev';
+data_FileName = 'CJ194_datafile029.nev';
 
 stimulus_Path = 'F:\CJ194\Stimulus\';
-stimulus_FileName = 'Paired_Stimulus_File_CJ194_0007.mat';
+stimulus_FileName = 'Paired_Stimulus_File_CJ194_0006.mat';
 
 load([stimulus_Path stimulus_FileName])
 
@@ -44,7 +44,7 @@ comment_txt        = reshape(cStruct.Comments,[],92);
 trial_NumCellArray = cellfun(@cell2mat,match(2:end), 'UniformOutput', false);
 % trial_NumArray     = cellfun(@str2num, trial_NumCellArray, 'UniformOutput', false);
 % trial_NumArray     = trial_NumArray(~ismember(1:length(trial_NumArray), [3829]));
-trial_NumArray     = cellfun(@str2num, trial_NumCellArray(~ismember(1:length(trial_NumCellArray), [])), 'UniformOutput', false);
+trial_NumArray     = cellfun(@str2num, trial_NumCellArray(~ismember(1:length(trial_NumCellArray), [1059 3829 3906])), 'UniformOutput', false);
 trial_NumArray    = trial_NumArray(1:end-1);
 find(diff(cell2mat(trial_NumArray))'>1)
 
@@ -68,14 +68,19 @@ comment_IDs        = [cell2mat(trial_LeadArray)'; cell2mat(trial_TrialArray)'; c
 if any(any(comment_IDs - stim.allStimTrain(:, [1:3827 3833:end]))) == true
     error('number of stim in stim file and comments doesnt match')
 end
-comments           = comments1;
+comments           = comments1([2:1058 1060:3829 3831:3905 3907:end-1]);
 
 % Digital Timings
 RawDIO        = dat.Data.SerialDigitalIO.UnparsedData;  % DIO tags
 RawTimes      = double(dat.Data.SerialDigitalIO.TimeStamp)/tRes*1000;  % DIO digital time(ms)
 DIO           = mod(RawDIO, 128);   % digital line without photodiode
 stim_OnTime1  = RawTimes(DIO == 2);  % stim 1 onset
+stim_OnTime1  = stim_OnTime1([1:7 9:5006 5009:end]);
+
 stim_OffTime1 = RawTimes(DIO == 3);  % stim 1 offset
+stim_OffTime1 = stim_OffTime1([1:7 9:5005 5007:end]);
+% [stim_OffTime2([3820:3826 3830:5004 5006:end])-stim_OnTime1([3820:3826 3830:end])]'
+
 stim_OnTime2  = RawTimes(DIO == 4);  % stim 2 onset
 stim_OffTime2 = RawTimes(DIO == 5);  % stim 1 offset
 

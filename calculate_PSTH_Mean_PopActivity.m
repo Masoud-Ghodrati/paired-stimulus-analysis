@@ -9,10 +9,10 @@ clc
 % stimulus_Path = '\\storage.erc.monash.edu\shares\R-MNHS-Syncitium\Shared\Marmoset data\CJ194 Stimulus Files\';
 % stimulus_FileName = 'Paired_Stimulus_File_CJ194_0001.mat';
 data_Path = 'F:\CJ194\Data\';
-data_FileName = 'CJ194_datafile026.nev';
+data_FileName = 'CJ194_datafile028.nev';
 
 stimulus_Path = 'F:\CJ194\Stimulus\';
-stimulus_FileName = 'Paired_Stimulus_File_CJ194_0002.mat';
+stimulus_FileName = 'Paired_Stimulus_File_CJ194_0005.mat';
 
 load([stimulus_Path stimulus_FileName])
 
@@ -103,7 +103,7 @@ SDF_binSize       = 35;  % ms
 leadStimDuration  = 1000*stim.durationLeadStim;  % presentation time of leading stimulus
 trailStimDuration = 1000*stim.durationTrailStim;  % presentation time of trailing stimulus
 ISIDurartin       = 1000*stim.durationISI;  % ISI duration
-pre_Stim          = 500;  % time before stimulus onset
+pre_Stim          = 100;  % time before stimulus onset
 post_Stim         = 200;  % time after stimulus onset
 winSize           = leadStimDuration + trailStimDuration + ISIDurartin + pre_Stim + post_Stim;  % ms (PSTH length)
 

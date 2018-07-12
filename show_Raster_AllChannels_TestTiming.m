@@ -4,10 +4,10 @@ clc
 
 % load the NEV file and do some pre-processing.
 data_Path = 'F:\CJ194\Data\';
-data_FileName = 'CJ194_datafile026.nev';
+data_FileName = 'CJ194_datafile028.nev';
 
 stimulus_Path = 'F:\CJ194\Stimulus\';
-stimulus_FileName = 'Paired_Stimulus_File_CJ194_0002.mat';
+stimulus_FileName = 'Paired_Stimulus_File_CJ194_0005.mat';
 
 load([stimulus_Path stimulus_FileName])
 
@@ -94,13 +94,13 @@ winSize           = leadStimDuration + trailStimDuration + ISIDurartin + pre_Sti
 % there can be 4 Alignments: start of 1st stim, end of 1st stim, start of
 % ISI, comments
 other_Alignments  = [-pre_Stim; -(leadStimDuration + pre_Stim); -(leadStimDuration + trailStimDuration + ISIDurartin + pre_Stim)];
-group_Trials      = 200;  % group every "group_Trails" trials to see the effect of learning
+group_Trials      = 60;  % group every "group_Trails" trials to see the effect of learning
 select_Alignments = 1;
 
 %% make a spike train for each selected channel
 close all
-SDF_binSize        = 50;  % ms
-time_Window        = 1000*[0 2522];  % time window ro plot spikes (sec)
+SDF_binSize        = 30;  % ms
+time_Window        = 1000*[0 3950];  % time window ro plot spikes (sec)
 line_Color         = [1 0 0; 0 1 0; 0 0 1; 0 0 0]; % line colors for tag
 % Raster plot properties
 YAXIS_LIM          = [0, 60];

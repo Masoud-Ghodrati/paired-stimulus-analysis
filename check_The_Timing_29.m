@@ -42,10 +42,7 @@ spikes    = double(dat.Data.Spikes.TimeStamp)/tRes*1000;  % spike times (ms)
 comment_txt        = reshape(cStruct.Comments,[],92);
 [match, noMatch]   = regexp(cellstr(comment_txt(:, 1:22)),'\d','match','forceCellOutput');
 trial_NumCellArray = cellfun(@cell2mat,match(2:end), 'UniformOutput', false);
-% trial_NumArray     = cellfun(@str2num, trial_NumCellArray, 'UniformOutput', false);
-% trial_NumArray     = trial_NumArray(~ismember(1:length(trial_NumArray), [3829]));
-trial_NumArray     = cellfun(@str2num, trial_NumCellArray(~ismember(1:length(trial_NumCellArray), [1059 3829 3906])), 'UniformOutput', false);
-trial_NumArray    = trial_NumArray(1:end-1);
+trial_NumArray     = cellfun(@str2num, trial_NumCellArray(~ismember(1:length(trial_NumCellArray), [1059 3829 3906 5639])), 'UniformOutput', false);
 find(diff(cell2mat(trial_NumArray))'>1)
 
 [match, noMatch]   = regexp(cellstr(comment_txt(:, 23:38)),'\d','match','forceCellOutput');
@@ -68,21 +65,28 @@ comment_IDs        = [cell2mat(trial_LeadArray)'; cell2mat(trial_TrialArray)'; c
 if any(any(comment_IDs - stim.allStimTrain(:, [1:3827 3833:end]))) == true
     error('number of stim in stim file and comments doesnt match')
 end
-comments           = comments1([2:1058 1060:3829 3831:3905 3907:end-1]);
+comments           = comments1(~ismember(1:length(comments1), [1 1059+1 3829+1 3906+1 5639+1]));
 
 % Digital Timings
 RawDIO        = dat.Data.SerialDigitalIO.UnparsedData;  % DIO tags
 RawTimes      = double(dat.Data.SerialDigitalIO.TimeStamp)/tRes*1000;  % DIO digital time(ms)
 DIO           = mod(RawDIO, 128);   % digital line without photodiode
-stim_OnTime1  = RawTimes(DIO == 2);  % stim 1 onset
-stim_OnTime1  = stim_OnTime1([1:7 9:5006 5009:end]);
 
-stim_OffTime1 = RawTimes(DIO == 3);  % stim 1 offset
-stim_OffTime1 = stim_OffTime1([1:7 9:5005 5007:end]);
-% [stim_OffTime2([3820:3826 3830:5004 5006:end])-stim_OnTime1([3820:3826 3830:end])]'
+a = DIO == 2;
+b = DIO == 3;
+c = DIO == 5;
+e = a(1:end-4) & b(3:end-2) & c(5:end);
 
-stim_OnTime2  = RawTimes(DIO == 4);  % stim 2 onset
-stim_OffTime2 = RawTimes(DIO == 5);  % stim 1 offset
+stim_OnTime1          = RawTimes(DIO == 2);  % stim 1 onset
+stim_OnTime1          = stim_OnTime1([1:7 8 9:5008 5009:end]);
+stim_OnTime1          = [stim_OnTime1(1:3827)  stim_OnTime1(3829:end)];
+
+stim_OffTime1         = RawTimes(DIO == 3);  % stim 1 offset
+stim_OffTime1         = stim_OffTime1([1:7 8 9:5007 5008:end]);
+stim_OffTime1         = [stim_OffTime1(1:3827) stim_OffTime1(3829:end)];
+
+stim_OffTime2         = RawTimes(DIO == 5);  % stim 1 onset; % stim 1 offset
+stim_OffTime2         = [stim_OffTime2(1:7) stim_OffTime1(8)+100  stim_OffTime2(8:3826) stim_OffTime2(3828:end)];
 
 % Photodiode
 PDTimes = double(dat.Data.Spikes.TimeStamp(dat.Data.Spikes.Electrode == 129))/tRes*1000;
@@ -110,11 +114,11 @@ hist(diff(comments),0:1500)
 title('comments')
 
 subplot(222)
-hist(diff(stim_OnTime1),0:1500)
+hist(diff(stim_OnTime1),0:9500)
 title('s1 onset')
 
 subplot(223)
-hist(diff(stim_OffTime2),0:1500)
+hist(diff(stim_OffTime2),0:9500)
 title('s2 offset')
 
 subplot(224)

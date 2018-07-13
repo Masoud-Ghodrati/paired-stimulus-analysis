@@ -4,10 +4,10 @@ clc
 
 % load the NEV file and do some pre-processing.
 data_Path = 'F:\CJ194\Data\';
-data_FileName = 'CJ194_datafile030.nev';
+data_FileName = 'CJ194_datafile029.nev';
 
 stimulus_Path = 'F:\CJ194\Stimulus\';
-stimulus_FileName = 'Paired_Stimulus_File_CJ194_0007.mat';
+stimulus_FileName = 'Paired_Stimulus_File_CJ194_0006.mat';
 
 load([stimulus_Path stimulus_FileName])
 
@@ -51,6 +51,9 @@ elseif strcmp(data_FileName, 'CJ194_datafile026.nev')
 elseif strcmp(data_FileName, 'CJ194_datafile028.nev')
     [stim_OnTime1, stim_OffTime1, stim_OffTime2, comments] = correct_Timing_CJ194_datafile028(stim_OnTime1, stim_OffTime1, stim_OffTime2, dat, stim);
     select_Electrodes = [1:12 17 19 21 23 26 27 29 32 32 37 40 41 42 44 46 50 51:57 66 73 75 76 83 85 86 87]; % 28
+elseif strcmp(data_FileName, 'CJ194_datafile029.nev')
+    [stim_OnTime1, stim_OffTime1, stim_OffTime2, comments] = correct_Timing_CJ194_datafile029(stim_OnTime1, stim_OffTime1, stim_OffTime2, dat, stim);
+    select_Electrodes = [1:12 14:17 19 21 22 26 27 29 31 32 37 40:42 44 46 50:57 63 64 66 73 75 76 83 84:87 93:96];
 elseif strcmp(data_FileName, 'CJ194_datafile030.nev')
     [stim_OnTime1, stim_OffTime1, stim_OffTime2, comments] = correct_Timing_CJ194_datafile030(stim_OnTime1, stim_OffTime1, stim_OffTime2, dat, stim);
     select_Electrodes = [1:12 14:17 19 21 22 26 27 29 31 32 37 40:42 44 46 50:57 63 64 66 73 75 76 83 84:87 93:96];
@@ -84,9 +87,9 @@ end
 stim_Train     = stim.allStimTrain;  % stimulus train. This should be a matrix of 3*n. 1st row: leading stim name/ind, 2nd trailing stim name/ind, last sample number
 stim_Images    = stim.allStimFile;  % presented image file
 % if (size([stim_OnTime1; stim_OffTime1; stim_OffTime2; comments], 2) - length(stim_Train)) ~= 0
-%     
+%
 %     error('DIO/Comments length does not match with stim length')
-%     
+%
 % end
 
 %% psth setting
@@ -106,7 +109,7 @@ select_Alignments = 1;
 %% make a spike train for each selected channel
 close all
 SDF_binSize        = 30;  % ms
-time_Window        = 1000*[0 3950];  % time window ro plot spikes (sec)
+time_Window        = 1000*[2600 3950];  % time window ro plot spikes (sec)
 line_Color         = [1 0 0; 0 1 0; 0 0 1; 0 0 0]; % line colors for tag
 % Raster plot properties
 YAXIS_LIM          = [0, 60];
@@ -168,7 +171,7 @@ line(this_Tag_Off2', [YAXIS_LIM(1) raster_Increment+RASTER_START_POINT], 'linest
 this_Tag_Cmt = comments(comments >= time_Window(1) &  comments <= time_Window(2));
 this_Tag_Cmt = repmat(this_Tag_Cmt, [2 1]);
 this_Tag_Cmt = this_Tag_Cmt - time_Window(1);
-line(this_Tag_Cmt', [YAXIS_LIM(1) raster_Increment+RASTER_START_POINT], 'linestyle', ':', 'color', line_Color(4, :), 'LineWidth', RASTER_LINE_WIDTH);
+line(this_Tag_Cmt', [YAXIS_LIM(1) raster_Increment+RASTER_START_POINT], 'linestyle', '--', 'color', line_Color(4, :), 'LineWidth', RASTER_LINE_WIDTH);
 
 aX = gca;
 aX.Box = 'off';
